@@ -9,6 +9,7 @@ For each planned time, finds the strongest onset in the render's own audio withi
 A planned hit with no onset of at least 5x the median strength nearby, or one more than a frame (17 ms at 60 fps) off,
 is flagged and the script exits 1. Checking the render (not the source song) catches a wrong trim or a drifted clip.
 """
+import os
 import shutil
 import subprocess
 import sys
@@ -22,9 +23,11 @@ if not shutil.which("ffmpeg"):
 video, planned = sys.argv[1], [float(x) for x in sys.argv[2:]]
 if not planned:
     sys.exit(__doc__)
-with tempfile.NamedTemporaryFile(suffix=".wav") as wav:
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", video, "-vn", "-ac", "1", "-ar", "22050", wav.name], check=True)
-    y, sr = librosa.load(wav.name, sr=22050)
+# A temporary folder, not NamedTemporaryFile: on Windows ffmpeg cannot write to a file Python is holding open.
+with tempfile.TemporaryDirectory() as tmp:
+    wav = os.path.join(tmp, "audio.wav")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", video, "-vn", "-ac", "1", "-ar", "22050", wav], check=True)
+    y, sr = librosa.load(wav, sr=22050)
 hop = 128
 env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop)
 times = librosa.frames_to_time(np.arange(len(env)), sr=sr, hop_length=hop)

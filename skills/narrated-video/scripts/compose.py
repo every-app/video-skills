@@ -68,7 +68,8 @@ def canvas(k, *layers):
 
 
 def label(i, text, long=False):
-    return f'<div class="label" id="{i}"><h2{" class=\"long\"" if long else ""}>{text}</h2></div>'
+    cls = ' class="long"' if long else ''   # outside the f-string: a backslash in one is a SyntaxError before Python 3.12
+    return f'<div class="label" id="{i}"><h2{cls}>{text}</h2></div>'
 
 
 def scene(k, T, body, labels='', url='app.example.com', fade_bg='#fff', content_bg=None):

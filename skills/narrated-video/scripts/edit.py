@@ -16,10 +16,14 @@ from common import load, save, seg_starts, take, to_edited, words
 d = sys.argv[1]; T = take(d); E = load(os.path.join(d, 'edit.json'))
 START, END, CUTS = E['start'], E['end'], [list(c) for c in E.get('cuts', [])]
 for c in CUTS: assert START <= c[0] < c[1] <= END, f'cut outside start..end: {c}'
+for p, c in zip(sorted(CUTS), sorted(CUTS)[1:]): assert p[1] <= c[0], f'overlapping cuts: {p} and {c}'
 
+# A cut touching start, end or the next cut leaves an empty segment, which build.py cannot crossfade: drop those.
 segs, cur = [], START
-for a, b, *_ in sorted(CUTS): segs.append(['a', cur, a]); cur = b
-segs.append(['a', cur, END])
+for a, b, *_ in sorted(CUTS):
+    if a > cur: segs.append(['a', cur, a])
+    cur = b
+if END > cur: segs.append(['a', cur, END])
 _, total = seg_starts(segs)
 # What the viewer hears, from the clip-level transcript (its word times are tighter, and it writes fillers out). A word
 # entirely inside a cut is gone; one that crosses a cut edge is marked *: Whisper often stretches a word over the pause
